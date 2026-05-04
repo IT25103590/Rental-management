@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RentalPro - Fleet Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #7C3AED;
+            --secondary: #A78BFA;
+            --accent: #F97316;
+            --bg: #0f172a;
+        }
+
+        body {
+            background: var(--bg);
+            min-height: 100vh;
+            font-family: 'Fira Sans', sans-serif;
+            color: #f1f5f9;
+        }
+
+        .font-mono { font-family: 'Fira Code', monospace; }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-item { 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        
+        .sidebar-item:hover {
+            background: rgba(124, 58, 237, 0.1);
+            color: var(--secondary);
+            transform: translateX(4px);
+        }
+
+        .sidebar-item.active {
+            background: rgba(124, 58, 237, 0.2);
+            border-left: 4px solid var(--primary);
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .input-glass {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.2s;
+        }
+
+        .input-glass:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+            outline: none;
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.8));
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(124, 58, 237, 0.3);
+        }
+
+        .pulse-available { animation: pulse-green 2s infinite; }
+        .pulse-rented { animation: pulse-blue 2s infinite; }
+
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            background: #6d28d9;
+            transform: scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
+        }
+
+        .btn-primary:active { transform: scale(0.98); }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="flex">
+
+    <!-- Sidebar -->
+    <div class="w-72 glass min-h-screen flex flex-col p-8 gap-10 fixed z-50">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <i class="fas fa-bolt text-white"></i>
+            </div>
+            <h1 class="text-2xl font-black tracking-tighter bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                RENTALPRO
+            </h1>
+        </div>
+        
+        <nav class="flex flex-col gap-2">
+            <p class="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold mb-2 ml-4">Fleet Management</p>
+            <a th:href="@{/fleet}" class="sidebar-item p-4 rounded-xl flex items-center gap-4" th:classappend="${activeTab == 'fleet' ? 'active' : ''}">
+                <i class="fas fa-th-large w-5"></i>
+                <span class="text-sm font-medium">Dashboard</span>
+            </a>
+            <a th:href="@{/register-vehicle}" class="sidebar-item p-4 rounded-xl flex items-center gap-4" th:classappend="${activeTab == 'register' ? 'active' : ''}">
+                <i class="fas fa-plus-circle w-5"></i>
+                <span class="text-sm font-medium">Add Vehicle</span>
+            </a>
+
+            <p class="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold mt-6 mb-2 ml-4">Operations</p>
+            <a th:href="@{/rent-vehicle}" class="sidebar-item p-4 rounded-xl flex items-center gap-4" th:classappend="${activeTab == 'rent' ? 'active' : ''}">
+                <i class="fas fa-key w-5"></i>
+                <span class="text-sm font-medium">Process Rental</span>
+            </a>
+            <a th:href="@{/rentals}" class="sidebar-item p-4 rounded-xl flex items-center gap-4" th:classappend="${activeTab == 'rentals' ? 'active' : ''}">
+                <i class="fas fa-history w-5"></i>
+                <span class="text-sm font-medium">Rental History</span>
+            </a>
+        </nav>
+
+        <div class="mt-auto bg-white/5 p-6 rounded-2xl border border-white/5">
+            <p class="text-xs text-gray-400 mb-2">Need Help?</p>
+            <a href="#" class="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-2">
+                <i class="fas fa-question-circle"></i>
+                Documentation
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-72 p-12 w-full">
+        
+        <!-- Flash Message -->
+        <div th:if="${message}" 
+             th:classappend="${#strings.contains(message, 'Error') ? 'bg-red-500/20 text-red-300 border-red-500/30' : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'}"
+             class="p-4 rounded-xl mb-8 border animate-content opacity-0 flex items-center gap-3"
+             th:text="${message}">
+        </div>
+
+        <!-- SECTION: FLEET DASHBOARD -->
+        <div th:if="${activeTab == 'fleet'}" class="flex flex-col gap-10">
+            
+            <div class="flex justify-between items-center animate-content opacity-0">
+                <h2 class="text-3xl font-bold">Fleet Management</h2>
+                <a th:href="@{/register-vehicle}" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-indigo-500/20">
+                    <i class="fas fa-plus"></i>
+                    <span>Add Vehicle</span>
+                </a>
+            </div>
+
+            <!-- Dashboard Stats -->
+            <div class="grid grid-cols-4 gap-6 animate-content opacity-0">
+                <div class="stat-card p-6 rounded-2xl relative overflow-hidden group">
+                    <div class="absolute -right-4 -bottom-4 text-white/5 text-6xl group-hover:scale-110 transition-transform">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <p class="text-gray-400 text-xs font-bold uppercase tracking-widest">Total Units</p>
+                    <h3 class="text-4xl font-black mt-2 font-mono" th:text="${totalUnits}">0</h3>
+                    <div class="mt-4 flex items-center text-[10px] text-indigo-400 font-bold">
+                        <i class="fas fa-arrow-up mr-1"></i> +0% since last month
+                    </div>
+                </div>
+                <div class="stat-card p-6 rounded-2xl border-l-4 border-green-500 relative overflow-hidden group">
+                    <div class="absolute -right-4 -bottom-4 text-green-500/5 text-6xl group-hover:scale-110 transition-transform">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <p class="text-gray-400 text-xs font-bold uppercase tracking-widest">Available</p>
+                    <h3 class="text-4xl font-black mt-2 font-mono text-green-400" th:text="${availableUnits}">0</h3>
+                    <div class="mt-4 flex items-center text-[10px] text-green-500 font-bold">
+                        <span class="w-2 h-2 bg-green-500 rounded-full mr-2 pulse-available"></span> Ready for rent
+                    </div>
+                </div>
+                <div class="stat-card p-6 rounded-2xl border-l-4 border-blue-500 relative overflow-hidden group">
+                    <div class="absolute -right-4 -bottom-4 text-blue-500/5 text-6xl group-hover:scale-110 transition-transform">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <p class="text-gray-400 text-xs font-bold uppercase tracking-widest">Rented</p>
+                    <h3 class="text-4xl font-black mt-2 font-mono text-blue-400" th:text="${rentedUnits}">0</h3>
+                    <div class="mt-4 flex items-center text-[10px] text-blue-500 font-bold">
+                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-2 pulse-rented"></span> Active sessions
+                    </div>
+                </div>
+                <div class="stat-card p-6 rounded-2xl border-l-4 border-yellow-500 relative overflow-hidden group">
+                    <div class="absolute -right-4 -bottom-4 text-yellow-500/5 text-6xl group-hover:scale-110 transition-transform">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <p class="text-gray-400 text-xs font-bold uppercase tracking-widest">In Service</p>
+                    <h3 class="text-4xl font-black mt-2 font-mono text-yellow-400" th:text="${inServiceUnits}">0</h3>
+                    <div class="mt-4 flex items-center text-[10px] text-yellow-500 font-bold">
+                        <i class="fas fa-exclamation-triangle mr-2"></i> Maintenance mode
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fleet List -->
+            <div class="glass p-10 rounded-[2.5rem] animate-content opacity-0">
+                <div class="flex justify-between items-center mb-10">
+                    <div>
+                        <h2 class="text-2xl font-black">Manage Fleet</h2>
+                        <p class="text-sm text-gray-400">Inventory of all registered vehicles</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+                            <input type="text" placeholder="Search ID or Model..." class="input-glass pl-10 pr-4 py-2 rounded-xl text-xs w-64">
+                        </div>
+                        <button class="bg-white/5 hover:bg-white/10 p-2 rounded-xl text-gray-400 transition-all">
+                            <i class="fas fa-filter text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-gray-500 text-[10px] uppercase tracking-[0.2em] border-b border-white/5">
+                                <th class="pb-6 px-4">UID</th>
+                                <th class="pb-6 px-4">Vehicle Specs</th>
+                                <th class="pb-6 px-4">Category</th>
+                                <th class="pb-6 px-4">Daily Revenue</th>
+                                <th class="pb-6 px-4 text-center">Operational Status</th>
+                                <th class="pb-6 px-4 text-right">Management</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            <tr th:each="v : ${vehicles}" 
+                                th:data-id="${v.vehicleId}"
+                                th:data-model="${v.model}"
+                                th:data-type="${v.type}"
+                                th:data-status="${v.status}"
+                                th:data-rate="${v.dailyRate}"
+                                th:data-kms="${v.runningKilometer}"
+                                th:data-desc="${v.technicalDescription}"
+                                th:data-img="${v.imageUrl}"
+                                onclick="handleRowClick(this)"
+                                class="hover:bg-white/[0.02] transition-colors group cursor-pointer">
+                                <td class="py-6 px-4">
+                                    <span class="font-mono text-indigo-400 bg-indigo-400/10 px-3 py-1 rounded-lg text-xs font-bold" th:text="${v.vehicleId}">B001</span>
+                                </td>
+                                <td class="py-6 px-4">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-16 h-12 rounded-lg overflow-hidden bg-white/5 border border-white/10 flex-shrink-0">
+                                           <img th:if="${v.imageUrl != null && v.imageUrl != ''}" 
+                                                th:src="@{${v.imageUrl.startsWith('http') || v.imageUrl.startsWith('/') ? v.imageUrl : '/' + v.imageUrl}(t=${#dates.createNow().getTime()})}" 
+                                                class="w-full h-full object-cover" 
+                                                alt="Vehicle"
+                                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                           <div th:classappend="${v.imageUrl != null && v.imageUrl != '' ? 'hidden' : ''}" 
+                                                class="w-full h-full flex items-center justify-center text-gray-600">
+                                               <i class="fas fa-image text-lg"></i>
+                                           </div>
+                                        </div>                                        <div class="flex flex-col">
+                                            <span class="font-bold text-sm" th:text="${v.model}">Model</span>
+                                            <span class="text-[10px] text-gray-500 uppercase tracking-wider mt-1" th:text="${v.type}">Type</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-6 px-4">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas text-gray-400 text-xs" th:classappend="${v.type == 'Bike' ? 'fa-bicycle' : (v.type == 'Scooter' ? 'fa-motorcycle' : 'fa-cycle')}"></i>
+                                        <span class="text-sm" th:text="${v.type}">Type</span>
+                                    </div>
+                                </td>
+                                <td class="py-6 px-4">
+                                    <span class="font-mono font-bold text-indigo-300" th:text="${'Rs. ' + v.dailyRate}">Rs. 0.00</span>
+                                </td>
+                                <td class="py-6 px-4 text-center">
+                                    <div class="inline-flex items-center px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border"
+                                         th:classappend="${v.status == 'Available' ? 'bg-green-500/10 text-green-400 border-green-500/20' : (v.status == 'Rented' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20')}">
+                                        <span class="w-1.5 h-1.5 rounded-full mr-2" 
+                                              th:classappend="${v.status == 'Available' ? 'bg-green-400 pulse-available' : (v.status == 'Rented' ? 'bg-blue-400 pulse-rented' : 'bg-yellow-400')}"></span>
+                                        <span th:text="${v.status}">Status</span>
+                                    </div>
+                                </td>
+                                <td class="py-6 px-4 text-right">
+                                    <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <a th:href="@{/vehicle/edit(id=${v.vehicleId})}" class="bg-indigo-600 hover:bg-indigo-500 text-white w-8 h-8 rounded-lg flex items-center justify-center transition-all">
+                                            <i class="fas fa-edit text-xs"></i>
+                                        </a>
+                                        <form th:action="@{/vehicle/delete}" method="post" onsubmit="return confirm('Delete vehicle?')" class="inline">
+                                            <input type="hidden" name="id" th:value="${v.vehicleId}">
+                                            <button type="submit" class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white w-8 h-8 rounded-lg flex items-center justify-center transition-all border border-red-500/20">
+                                                <i class="fas fa-trash-alt text-xs"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: EDIT VEHICLE -->
+        <div th:if="${activeTab == 'edit-vehicle'}" class="max-w-4xl animate-content opacity-0">
+            <div class="flex items-center justify-between mb-10">
+                <div>
+                    <h2 class="text-3xl font-black">Edit Vehicle</h2>
+                    <p class="text-gray-400 mt-1">Configuring Unit: <span class="text-indigo-400 font-mono font-bold" th:text="${vehicle.vehicleId}">ID</span></p>
+                </div>
+                <form th:action="@{/vehicle/delete}" method="post" onsubmit="return confirm('Remove this vehicle from fleet permanently?')">
+                    <input type="hidden" name="id" th:value="${vehicle.vehicleId}">
+                    <button type="submit" class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest border border-red-500/30 transition-all">
+                        <i class="fas fa-trash-alt mr-2"></i> Decommission Unit
+                    </button>
+                </form>
+            </div>
+
+            <form th:action="@{/vehicle/update}" method="post" enctype="multipart/form-data" class="glass p-12 rounded-[2.5rem] grid grid-cols-2 gap-10">
+                <input type="hidden" name="vehicleId" th:value="${vehicle.vehicleId}">
+                <input type="hidden" name="imageUrl" th:value="${vehicle.imageUrl}">
+                
+                <div class="space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Model Designation</label>
+                    <input type="text" name="model" th:value="${vehicle.model}" class="input-glass w-full p-5 rounded-2xl font-bold">
+                </div>
+                
+                <div class="space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Vehicle Classification</label>
+                    <select name="type" class="input-glass w-full p-5 rounded-2xl font-bold appearance-none cursor-pointer">
+                        <option value="Bike" th:selected="${vehicle.type == 'Bike'}">Bike</option>
+                        <option value="Scooter" th:selected="${vehicle.type == 'Scooter'}">Scooter</option>
+                        <option value="Cycle" th:selected="${vehicle.type == 'Cycle'}">Cycle</option>
+                    </select>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Daily Rental Rate (Rs.)</label>
+                    <div class="relative">
+                        <span class="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-bold">Rs.</span>
+                        <input type="number" step="0.01" name="dailyRate" th:value="${vehicle.dailyRate}" class="input-glass w-full p-5 pl-10 rounded-2xl font-mono font-bold">
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Running Kilometers</label>
+                    <input type="number" step="0.1" name="runningKilometer" th:value="${vehicle.runningKilometer}" class="input-glass w-full p-5 rounded-2xl font-mono font-bold">
+                </div>
+
+                <div class="space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Deployment Status</label>
+                    <select name="status" class="input-glass w-full p-5 rounded-2xl font-bold appearance-none cursor-pointer">
+                        <option value="Available" th:selected="${vehicle.status == 'Available'}">Available</option>
+                        <option value="Rented" th:selected="${vehicle.status == 'Rented'}">Rented</option>
+                        <option value="In Service" th:selected="${vehicle.status == 'In Service'}">In Service</option>
+                    </select>
+                </div>
+
+                <div class="col-span-2 space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Vehicle Image (File Upload)</label>
+                    <div class="flex gap-4">
+                        <div class="relative flex-1">
+                            <i class="fas fa-upload absolute left-5 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                            <input type="file" name="imageFile" id="edit-image-file" accept="image/*" class="input-glass w-full p-5 pl-12 rounded-2xl font-mono text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
+                        </div>
+                        <div class="w-24 h-24 rounded-2xl overflow-hidden bg-white/5 border border-white/10 flex-shrink-0">
+                            <img id="edit-preview" 
+                                 th:src="${vehicle.imageUrl != null && vehicle.imageUrl != '' ? vehicle.imageUrl : ''}" 
+                                 th:classappend="${vehicle.imageUrl == null || vehicle.imageUrl == '' ? 'hidden' : ''}"
+                                 class="w-full h-full object-cover">
+                            <div id="edit-placeholder" 
+                                 th:classappend="${vehicle.imageUrl != null && vehicle.imageUrl != '' ? 'hidden' : ''}"
+                                 class="w-full h-full flex items-center justify-center text-gray-600">
+                                <i class="fas fa-camera text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-2 space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Technical Specifications & Notes</label>
+                    <textarea name="technicalDescription" rows="5" class="input-glass w-full p-6 rounded-3xl" th:text="${vehicle.technicalDescription}"></textarea>
+                </div>
+
+                <div class="col-span-2 flex gap-6 mt-4">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-[0.2em] py-5 px-10 rounded-2xl flex-1 transition-all active:scale-95 shadow-xl shadow-indigo-500/20">
+                        Commit Changes
+                    </button>
+                    <a th:href="@{/fleet}" class="bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-[0.2em] py-5 px-10 rounded-2xl transition-all">
+                        Abort
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- SECTION: REGISTER VEHICLE -->
+        <div th:if="${activeTab == 'register'}" class="max-w-3xl animate-content opacity-0">
+            <div class="mb-10">
+                <h2 class="text-3xl font-black text-white">Register New Fleet Unit</h2>
+                <p class="text-gray-400 mt-1">Add a new vehicle to the active deployment list</p>
+            </div>
+            
+            <form th:action="@{/register-vehicle}" method="post" enctype="multipart/form-data" class="glass p-12 rounded-[2.5rem] grid grid-cols-2 gap-8">
+                <div class="space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Vehicle UID</label>
+                    <input type="text" name="vehicleId" placeholder="e.g., B099" required class="input-glass w-full p-4 rounded-2xl font-mono">
+                </div>
+                <div class="space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Daily Rate (Rs.)</label>
+                    <input type="number" step="0.01" name="dailyRate" placeholder="0.00" required class="input-glass w-full p-4 rounded-2xl font-mono">
+                </div>
+                <div class="col-span-2 space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Running Kilometers</label>
+                    <input type="number" step="0.1" name="runningKilometer" placeholder="0.0" required class="input-glass w-full p-4 rounded-2xl font-mono">
+                </div>
+                <div class="col-span-2 space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Model Specification</label>
+                    <input type="text" name="model" placeholder="Enter manufacturer and model..." required class="input-glass w-full p-4 rounded-2xl">
+                </div>
+                <div class="col-span-2 space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Unit Classification</label>
+                    <select name="type" class="input-glass w-full p-4 rounded-2xl appearance-none cursor-pointer">
+                        <option value="Bike">Bike</option>
+                        <option value="Scooter">Scooter</option>
+                        <option value="Cycle">Cycle</option>
+                    </select>
+                </div>
+                <div class="col-span-2 space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Vehicle Image (File Upload)</label>
+                    <div class="flex gap-4">
+                        <div class="relative flex-1">
+                            <i class="fas fa-upload absolute left-5 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                            <input type="file" name="imageFile" id="register-image-file" accept="image/*" class="input-glass w-full p-4 pl-12 rounded-2xl font-mono text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
+                        </div>
+                        <div class="w-20 h-20 rounded-2xl overflow-hidden bg-white/5 border border-white/10 flex-shrink-0">
+                            <img id="register-preview" src="" class="w-full h-full object-cover hidden">
+                            <div id="register-placeholder" class="w-full h-full flex items-center justify-center text-gray-600">
+                                <i class="fas fa-camera text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-span-2 space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">System Description</label>
+                    <textarea name="technicalDescription" rows="4" placeholder="Technical details, maintenance history..." class="input-glass w-full p-5 rounded-3xl"></textarea>
+                </div>
+                <button type="submit" class="col-span-2 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-[0.2em] py-5 rounded-2xl mt-4 shadow-xl shadow-indigo-500/20 transition-all active:scale-95">
+                    Register to Fleet
+                </button>
+            </form>
+        </div>
+
+        <!-- SECTION: RENTALS -->
+        <div th:if="${activeTab == 'rentals'}" class="flex flex-col gap-12">
+            <div class="glass p-10 rounded-[2.5rem] animate-content opacity-0 border-l-8 border-orange-500">
+                <div class="flex items-center gap-6">
+                    <div class="w-16 h-16 bg-orange-500/20 rounded-2xl flex items-center justify-center text-orange-500 text-2xl">
+                        <i class="fas fa-undo-alt"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h2 class="text-2xl font-black">Quick Return</h2>
+                        <p class="text-sm text-gray-400">Process vehicle return by Rental ID or Vehicle ID</p>
+                    </div>
+                </div>
+                <form th:action="@{/ReturnBikeServlet}" method="post" class="flex gap-4 mt-8">
+                    <div class="relative flex-1">
+                        <i class="fas fa-barcode absolute left-5 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                        <input type="text" name="rentalId" placeholder="Scan or type ID..." required class="input-glass w-full pl-12 p-5 rounded-2xl font-mono">
+                    </div>
+                    <button type="submit" class="bg-orange-600 hover:bg-orange-500 px-12 py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl shadow-orange-500/20 active:scale-95">
+                        Process Return
+                    </button>
+                </form>
+            </div>
+
+            <div class="glass p-10 rounded-[2.5rem] animate-content opacity-0">
+                <div class="flex justify-between items-center mb-10">
+                    <div>
+                        <h2 class="text-2xl font-black">Rental Log</h2>
+                        <p class="text-sm text-gray-400">Full history of rental operations</p>
+                    </div>
+                    <button class="bg-white/5 hover:bg-white/10 px-6 py-3 rounded-xl text-xs font-bold text-gray-400 flex items-center gap-2">
+                        <i class="fas fa-download"></i> Export CSV
+                    </button>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-gray-500 text-[10px] uppercase tracking-[0.2em] border-b border-white/5">
+                                <th class="pb-6 px-4">Transaction ID</th>
+                                <th class="pb-6 px-4">Customer</th>
+                                <th class="pb-6 px-4">Vehicle ID</th>
+                                <th class="pb-6 px-4 text-center">Operation Status</th>
+                                <th class="pb-6 px-4 text-right">Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            <tr th:each="r : ${rentals}" class="hover:bg-white/[0.02] transition-colors group">
+                                <td class="py-6 px-4 font-mono text-indigo-400 font-bold" th:text="${r.rentalId}">R001</td>
+                                <td class="py-6 px-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-[10px] font-bold text-indigo-400" th:text="${#strings.substring(r.userId, 0, 1)}">U</div>
+                                        <span class="font-bold text-sm" th:text="${r.userId}">User</span>
+                                    </div>
+                                </td>
+                                <td class="py-6 px-4 font-mono text-sm" th:text="${r.bikeId}">B001</td>
+                                <td class="py-6 px-4 text-center">
+                                    <span th:text="${r.status}"
+                                          th:classappend="${r.status == 'Returned' ? 'text-green-400 bg-green-400/10 border-green-500/20' : 'text-orange-400 bg-orange-400/10 border-orange-500/20'}"
+                                          class="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border">
+                                        Rented
+                                    </span>
+                                </td>
+                                <td class="py-6 px-4 text-right text-gray-500 text-xs font-mono">
+                                    2024-05-20 14:30
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: GIVE RENT -->
+        <div th:if="${activeTab == 'rent'}" class="max-w-2xl animate-content opacity-0">
+            <div class="mb-10 text-center">
+                <div class="w-20 h-20 bg-indigo-600 rounded-3xl mx-auto flex items-center justify-center text-3xl text-white shadow-2xl shadow-indigo-500/40 mb-6">
+                    <i class="fas fa-file-contract"></i>
+                </div>
+                <h2 class="text-3xl font-black">Process New Rental</h2>
+                <p class="text-gray-400 mt-2">Initialize a new rental agreement for a customer</p>
+            </div>
+
+            <form th:action="@{/rent-vehicle}" method="post" class="glass p-12 rounded-[2.5rem] space-y-8">
+                <div class="space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Customer Identification</label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-5 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                        <input type="text" name="userId" placeholder="Enter Customer ID (e.g., U001)" required class="input-glass w-full pl-12 p-5 rounded-2xl font-bold">
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Available Fleet Inventory</label>
+                    <div class="relative">
+                        <i class="fas fa-truck-loading absolute left-5 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                        <select name="vehicleId" class="input-glass w-full pl-12 p-5 rounded-2xl font-bold appearance-none cursor-pointer">
+                            <option th:each="v : ${vehicles}" 
+                                    th:if="${v.status == 'Available'}" 
+                                    th:value="${v.vehicleId}" 
+                                    th:text="${v.vehicleId + ' - ' + v.model + ' (Rs. ' + v.dailyRate + '/day)'}">
+                            </option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-[0.2em] py-6 rounded-2xl w-full shadow-2xl shadow-indigo-500/30 transition-all active:scale-95 flex items-center justify-center gap-3">
+                        <i class="fas fa-check-circle"></i>
+                        Authorize Rental
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- Vehicle Detail Modal -->
+    <div id="detail-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6">
+        <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-md" onclick="closeModal()"></div>
+        
+        <div class="relative w-full max-w-5xl animate-modal opacity-0 translate-y-8">
+            <div class="glass rounded-[3rem] overflow-hidden flex shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] border-white/20 bg-slate-900/80">
+                
+                <!-- Left: Immersive Photo -->
+                <div class="w-1/2 h-[600px] relative group">
+                    <img id="modal-img" src="" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60"></div>
+                    
+                    <div id="modal-placeholder" class="absolute inset-0 flex items-center justify-center text-slate-800 bg-slate-900/50 hidden">
+                        <i class="fas fa-motorcycle text-9xl opacity-20"></i>
+                    </div>
+
+                    <!-- Floating Status -->
+                    <div class="absolute top-8 left-8">
+                        <div id="modal-status-badge" class="px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border backdrop-blur-xl shadow-xl">
+                            AVAILABLE
+                        </div>
+                    </div>
+
+                    <!-- Quick Info Overlay -->
+                    <div class="absolute bottom-10 left-10 right-10 flex justify-between items-end">
+                        <div class="space-y-1">
+                            <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Premium Unit</span>
+                            <h3 id="modal-id-display" class="text-2xl font-mono font-black text-white">#B001</h3>
+                        </div>
+                        <div class="flex -space-x-3">
+                            <div class="w-10 h-10 rounded-full border-2 border-slate-900 bg-indigo-500 flex items-center justify-center text-xs shadow-lg"><i class="fas fa-shield-alt"></i></div>
+                            <div class="w-10 h-10 rounded-full border-2 border-slate-900 bg-purple-500 flex items-center justify-center text-xs shadow-lg"><i class="fas fa-check"></i></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right: Premium Details -->
+                <div class="w-1/2 p-16 flex flex-col bg-gradient-to-br from-slate-900/40 to-transparent">
+                    <button onclick="closeModal()" class="absolute top-10 right-10 w-12 h-12 rounded-2xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-all flex items-center justify-center border border-white/5 group">
+                        <i class="fas fa-times text-xl transition-transform group-hover:rotate-90"></i>
+                    </button>
+
+                    <div class="mb-12">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span id="modal-type-tag" class="bg-indigo-500/10 text-indigo-400 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-500/20">BIKE</span>
+                            <div class="h-[1px] flex-1 bg-gradient-to-r from-white/10 to-transparent"></div>
+                        </div>
+                        <h2 id="modal-model" class="text-5xl font-black text-white leading-tight tracking-tighter">Gaint Escape</h2>
+                    </div>
+
+                    <!-- Key Metrics Grid -->
+                    <div class="grid grid-cols-2 gap-10 mb-12">
+                        <div class="relative group">
+                            <div class="absolute -inset-4 bg-indigo-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div class="relative">
+                                <p class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-tag text-indigo-400"></i> Daily Revenue
+                                </p>
+                                <div class="flex items-baseline gap-1">
+                                    <span class="text-4xl font-black text-white font-mono" id="modal-rate">15.00</span>
+                                    <span class="text-slate-500 font-bold text-sm">LKR</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="relative group">
+                            <div class="absolute -inset-4 bg-emerald-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div class="relative">
+                                <p class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-tachometer-alt text-emerald-400"></i> Total Distance
+                                </p>
+                                <div class="flex items-baseline gap-1">
+                                    <span class="text-4xl font-black text-white font-mono" id="modal-kms">1,250.5</span>
+                                    <span class="text-slate-500 font-bold text-sm">KM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Technical Specs Section -->
+                    <div class="flex-1">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
+                            <i class="fas fa-microchip text-purple-400"></i> Technical Specifications
+                        </p>
+                        <div class="bg-white/5 rounded-3xl p-6 border border-white/5 relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <i class="fas fa-quote-right text-4xl"></i>
+                            </div>
+                            <p id="modal-desc" class="text-slate-300 text-sm leading-relaxed relative z-10 font-medium italic">
+                                Standard commuter bike for daily urban transportation. Well maintained and reliable.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="mt-12 flex gap-4">
+                        <a id="modal-edit-btn" href="#" class="flex-[2] bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-[0.2em] py-5 rounded-2xl text-center text-xs transition-all shadow-xl shadow-indigo-600/20 active:scale-95 flex items-center justify-center gap-3">
+                            <i class="fas fa-cog"></i>
+                            Configure Unit
+                        </a>
+                        <button onclick="closeModal()" class="flex-1 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest rounded-2xl text-[10px] transition-all border border-white/10 active:scale-95">
+                            Dismiss
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Modal functions
+        function handleRowClick(row) {
+            const vehicle = {
+                vehicleId: row.getAttribute('data-id'),
+                model: row.getAttribute('data-model'),
+                type: row.getAttribute('data-type'),
+                status: row.getAttribute('data-status'),
+                dailyRate: parseFloat(row.getAttribute('data-rate')),
+                runningKilometer: parseFloat(row.getAttribute('data-kms')),
+                technicalDescription: row.getAttribute('data-desc'),
+                imageUrl: row.getAttribute('data-img')
+            };
+            openVehicleModal(vehicle);
+        }
+
+        function openVehicleModal(vehicle) {
+            const modal = document.getElementById('detail-modal');
+            const img = document.getElementById('modal-img');
+            const placeholder = document.getElementById('modal-placeholder');
+            
+            // Set basic info
+            document.getElementById('modal-model').innerText = vehicle.model;
+            document.getElementById('modal-type-tag').innerText = vehicle.type.toUpperCase();
+            document.getElementById('modal-id-display').innerText = '#' + vehicle.vehicleId;
+            document.getElementById('modal-rate').innerText = vehicle.dailyRate.toFixed(2);
+            document.getElementById('modal-kms').innerText = vehicle.runningKilometer.toLocaleString();
+            document.getElementById('modal-desc').innerText = vehicle.technicalDescription || 'No technical specifications provided for this unit.';
+            document.getElementById('modal-edit-btn').href = '/vehicle/edit?id=' + vehicle.vehicleId;
+            
+            // Status badge
+            const badge = document.getElementById('modal-status-badge');
+            badge.innerText = vehicle.status.toUpperCase();
+            badge.className = 'px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border backdrop-blur-xl shadow-xl ';
+            if (vehicle.status === 'Available') badge.className += 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+            else if (vehicle.status === 'Rented') badge.className += 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+            else badge.className += 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+
+            // Handle Image
+            if (vehicle.imageUrl) {
+                img.src = (vehicle.imageUrl.startsWith('http') || vehicle.imageUrl.startsWith('/') ? vehicle.imageUrl : '/' + vehicle.imageUrl);
+                img.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            } else {
+                img.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex'); // Ensure flex centering
+            anime({
+                targets: '.animate-modal',
+                translateY: [40, 0],
+                opacity: [0, 1],
+                scale: [0.95, 1],
+                easing: 'easeOutExpo',
+                duration: 800
+            });
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('detail-modal');
+            anime({
+                targets: '.animate-modal',
+                translateY: [0, 20],
+                opacity: [1, 0],
+                scale: [1, 0.95],
+                easing: 'easeInExpo',
+                duration: 400,
+                complete: () => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+            });
+        }
+
+        window.onload = function() {
+            anime({
+                targets: '.animate-content',
+                translateY: [20, 0],
+                opacity: [0, 1],
+                delay: anime.stagger(100),
+                easing: 'easeOutExpo',
+                duration: 800
+            });
+
+            // Live Image Preview
+            const setupPreview = (inputId, previewId, placeholderId) => {
+                const input = document.getElementById(inputId);
+                const preview = document.getElementById(previewId);
+                const placeholder = document.getElementById(placeholderId);
+
+                if (input && preview && placeholder) {
+                    input.onchange = (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                preview.src = event.target.result;
+                                preview.classList.remove('hidden');
+                                placeholder.classList.add('hidden');
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    };
+                }
+            };
+
+            setupPreview('edit-image-file', 'edit-preview', 'edit-placeholder');
+            setupPreview('register-image-file', 'register-preview', 'register-placeholder');
+        };
+    </script>
+</body>
+</html>
